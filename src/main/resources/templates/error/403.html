@@ -1,35 +1,52 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Acceso Denegado</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 2rem;
+            max-width: 560px;
+            width: 90%;
             text-align: center;
-            padding: 50px;
         }
-        .error-code {
-            font-size: 72px;
-            color: #c62828;
-            margin-bottom: 20px;
-        }
-        .message {
-            font-size: 18px;
-            margin-bottom: 30px;
+        .card p {
+            margin: 0.75rem 0 1.25rem;
         }
         .btn {
-            padding: 10px 20px;
-            background: #2e7d32;
-            color: white;
+            padding: 6px 12px;
             text-decoration: none;
             border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+        .btn-back {
+            background: #1c7293;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div class="error-code">403</div>
-    <div class="message">No tienes permiso para acceder a esta página.</div>
-    <a th:href="@{/dashboard}" class="btn">Volver al Dashboard</a>
+    <div class="card">
+        <h1>Acceso Denegado (403)</h1>
+        <p>El usuario <strong sec:authentication="name"></strong>
+            no tiene permisos para acceder a este recurso.</p>
+        <a th:href="@{/dashboard}" class="btn btn-back">Volver al Dashboard</a>
+    </div>
 </body>
 </html>
