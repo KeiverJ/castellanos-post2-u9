@@ -1,0 +1,100 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lista de Cursos</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2rem;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        text-align: left;
+      }
+      th {
+        background: #065a82;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background: #f5f5f5;
+      }
+      .btn {
+        padding: 6px 12px;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .btn-inscribir {
+        background: #1c7293;
+        color: white;
+      }
+      .btn-new {
+        background: #2e7d32;
+        color: white;
+        margin-bottom: 1rem;
+        display: inline-block;
+      }
+      .badge {
+        background: #e3f2fd;
+        color: #0d47a1;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Gestión de Cursos</h1>
+    <a th:href="@{/cursos/nuevo}" class="btn btn-new">+ Nuevo Curso</a>
+    <a th:href="@{/estudiantes}" class="btn btn-new" style="background: #065a82"
+      >Ver Estudiantes</a
+    >
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Créditos</th>
+          <th>Estudiantes inscritos</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="c : ${cursos}">
+          <td th:text="${c.id}"></td>
+          <td th:text="${c.nombre}"></td>
+          <td th:text="${c.creditos}"></td>
+          <td>
+            <span
+              class="badge"
+              th:text="${#sets.size(c.estudiantes)} + ' estudiante(s)'"
+            ></span>
+            <span
+              th:each="e : ${c.estudiantes}"
+              th:text="${e.nombre} + ' ' + ${e.apellido} + ' | '"
+            ></span>
+          </td>
+          <td>
+            <a
+              th:href="@{/cursos/{id}/inscribir(id=${c.id})}"
+              class="btn btn-inscribir"
+              >Inscribir</a
+            >
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(cursos)}">
+          <td colspan="5" style="text-align: center">
+            No hay cursos registrados.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>
