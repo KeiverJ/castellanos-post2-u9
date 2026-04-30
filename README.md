@@ -1,236 +1,175 @@
-# Seguridad en Aplicaciones Web - Unidad 9 (Post-Contenido 2)
+# Sistema de Gestión de Estudiantes - Seguridad Avanzada
 
-**Universidad:** UDES - Ingenieria de Sistemas (2026)
-**Asignatura:** Programacion Web
-**Repositorio:** castellanos-post2-u9
+Proyecto académico que implementa las mejores prácticas de seguridad con Spring Security 6 y Thymeleaf.
 
-## Descripcion del proyecto y objetivo de la unidad
+## Tecnologías
+- **Java 17**
+- **Spring Boot 3.4.5**
+- **Spring Security 6** (CSRF, CSP, @PreAuthorize)
+- **Thymeleaf** (Escape automático XSS)
+- **Maven**
+- **BCrypt** (12 rondas)
 
-Este proyecto es la continuacion del sistema de estudiantes, cursos y autenticacion. El objetivo de la unidad es verificar de forma activa la seguridad de la aplicacion implementando:
+---
 
-- Autorizacion a nivel de metodo con `@PreAuthorize` y expresiones SpEL.
-- Mitigacion de XSS usando `th:text` en Thymeleaf y una politica CSP basica.
-- Proteccion CSRF comprobando que un POST sin token es rechazado.
+## Configuración de Seguridad Implementada
 
-## Arquitectura del sistema
+### 1. @PreAuthorize en Capa de Servicio
+Se aplicaron anotaciones de seguridad en `UsuarioService.java` con lógica diferente:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   Vista (Thymeleaf)                      │
-│ login.html | registro.html | dashboard.html | panel.html │
-│ error/403.html | estudiantes/* | cursos/*                │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                    Controladores                         │
-│ AuthController | CursoController | EstudianteController  │
-│ ErrorController                                        │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                      Servicios                           │
-│ UsuarioService | UsuarioDetailsService | CursoService    │
-│ EstudianteService                                       │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                    Repositorios                          │
-│ UsuarioRepository | CursoRepository | EstudianteRepository│
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                    Base de datos                          │
-│ MySQL 9.6                                                │
-└─────────────────────────────────────────────────────────┘
+| Método | Anotación | Propósito |
+|--------|-----------|-----------|
+| `listarTodos()` | `@PreAuthorize("hasRole('ADMIN')")` | Solo administradores |
+| `buscarPorEmail(email)` | `@PreAuthorize("hasAnyRole('ADMIN','USER') and (#email == authentication.name or hasRole('ADMIN'))")` | Dueño del perfil o admin |
+| `cambiarRol(id, rol)` | `@PreAuthorize("hasRole('ADMIN')")` | Solo administradores |
+| `actualizarNombre(usuario)` | `@PreAuthorize("#usuario.email == authentication.name or hasRole('ADMIN')")` | Dueño o admin |
 
-Capa transversal de seguridad:
-- `SecurityConfig` define autenticacion, autorizacion, CSP y CSRF.
-- `@PreAuthorize` aplica reglas de acceso en `UsuarioService`.
+### 2. Protección XSS (Cross-Site Scripting)
+Thymeleaf configurado con escape automático (`th:text` en lugar de `th:utext`):
+```html
+<p>Nombre: <span th:text="${usuario.nombre}"></span></p>
 ```
 
-## Tecnologias utilizadas
+**Prueba XSS realizada:**
+- **Inyección intentada:** `<script>alert('XSS')</script>` en el campo nombre
+- **Resultado:** El navegador muestra el texto literal `<script>alert('XSS')</script>` sin ejecutar el script
+- **Captura:** `capturas/xss-escapado-dashboard.png`
 
-| Tecnologia       | Version           | Proposito                              |
-| ---------------- | ----------------- | -------------------------------------- |
-| Java             | 21                | Lenguaje de programacion               |
-| Spring Boot      | 3.5.13            | Framework principal                    |
-| Spring Security  | 6.x               | Autenticacion, autorizacion, CSRF, CSP |
-| Spring Data JPA  | 6.x               | Acceso a datos con Hibernate           |
-| Thymeleaf        | 3.x               | Motor de plantillas HTML               |
-| Thymeleaf Extras | Spring Security 6 | Tags de seguridad en vistas            |
-| MySQL            | 9.6               | Base de datos relacional               |
-| Maven            | 3.9.12            | Gestion de dependencias y build        |
-| Tomcat embebido  | 10.1.x            | Servidor integrado en Spring Boot      |
-
-## Estructura del proyecto
-
-```
-castellanos-post2-u9/
-├── .mvn/
-├── capturas/
-│   ├── acceso-denegado-403.png
-│   ├── csp-header.png
-│   ├── csrf-403.png
-│   └── xss-escapado-dashboard.png
-├── mvnw
-├── mvnw.cmd
-├── pom.xml
-├── src/
-│   ├── main/
-│   │   ├── java/com/universidad/estudiantes/
-│   │   │   ├── EstudiantesApplication.java
-│   │   │   ├── config/
-│   │   │   │   └── SecurityConfig.java
-│   │   │   ├── controller/
-│   │   │   │   ├── AuthController.java
-│   │   │   │   ├── CursoController.java
-│   │   │   │   ├── ErrorController.java
-│   │   │   │   └── EstudianteController.java
-│   │   │   ├── model/
-│   │   │   │   ├── Curso.java
-│   │   │   │   ├── Estudiante.java
-│   │   │   │   └── Usuario.java
-│   │   │   ├── repository/
-│   │   │   │   ├── CursoRepository.java
-│   │   │   │   ├── EstudianteRepository.java
-│   │   │   │   └── UsuarioRepository.java
-│   │   │   └── service/
-│   │   │       ├── CursoService.java
-│   │   │       ├── EstudianteService.java
-│   │   │       ├── UsuarioDetailsService.java
-│   │   │       └── UsuarioService.java
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       └── templates/
-│   │           ├── admin/panel.html
-│   │           ├── auth/login.html
-│   │           ├── auth/registro.html
-│   │           ├── cursos/formulario.html
-│   │           ├── cursos/inscribir.html
-│   │           ├── cursos/lista.html
-│   │           ├── dashboard.html
-│   │           ├── error/403.html
-│   │           └── estudiantes/
-│   │               ├── confirmar-eliminar.html
-│   │               ├── formulario.html
-│   │               └── lista.html
-│   └── test/java/com/universidad/estudiantes/EstudiantesApplicationTests.java
-└── target/ (salida de compilacion)
+### 3. Protección CSRF (Cross-Site Request Forgery)
+Configurado en `SecurityConfig.java`:
+```java
+.csrf(csrf -> csrf
+    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+)
 ```
 
-## Prerrequisitos
+**Prueba CSRF realizada:**
+- **Método:** Enviar petición POST sin token CSRF usando curl/Postman
+- **Petición:** `curl -X POST http://localhost:8080/admin -d "dato=test"`
+- **Respuesta del servidor:** `403 Forbidden` - Acceso denegado
+- **Captura:** `capturas/csrf-403.png`
 
-- Java 21 configurado en `JAVA_HOME`.
-- Maven 3.9.12 (o usar `mvnw`).
-- MySQL 9.6 en ejecucion.
-- Puerto 8080 disponible.
-
-## Configuracion inicial de base de datos
-
-1. Crear la base de datos:
-
-```sql
-CREATE DATABASE IF NOT EXISTS estudiantes_db
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+### 4. Content Security Policy (CSP)
+Cabecera configurada para prevenir inyección de recursos maliciosos:
+```java
+.contentSecurityPolicy(csp -> csp
+    .policyDirectives(
+        "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data:; " +
+        "frame-ancestors 'none'"
+    )
+)
 ```
 
-2. Crear usuario de aplicacion (si no existe):
+**Verificación CSP:**
+- **Herramienta:** Inspector del navegador (F12) → Pestaña Network → Headers de respuesta
+- **Cabecera presente:** `Content-Security-Policy: default-src 'self'; script-src 'self';...`
+- **Captura:** `capturas/csp-header.png`
 
-```sql
-CREATE USER IF NOT EXISTS 'appuser'@'localhost'
-  IDENTIFIED BY 'apppass';
+### 5. Página 403 Personalizada
+Vista dedicada en `templates/error/403.html` con diseño profesional que muestra:
+- Usuario autenticado actual (`sec:authentication="name"`)
+- Mensaje claro de acceso denegado
+- Botón de retorno al dashboard
 
-GRANT ALL PRIVILEGES ON estudiantes_db.* TO 'appuser'@'localhost';
-FLUSH PRIVILEGES;
+**Prueba de acceso no autorizado:**
+- **Usuario:** `user@test.com` (Rol: USER)
+- **Acción:** Intentar acceder a `/admin`
+- **Respuesta:** Redirección a `/error/403` con página personalizada
+- **Captura:** `capturas/acceso-denegado-403.png`
+
+---
+
+## Evidencias de Seguridad
+
+| Prueba | Descripción | Captura |
+|--------|-------------|---------|
+| XSS Mitigado | Inyección de script no ejecutada | `xss-escapado-dashboard.png` |
+| CSRF Activo | POST sin token rechazado (403) | `csrf-403.png` |
+| CSP Header | Cabecera presente en respuesta | `csp-header.png` |
+| Acceso Denegado | @PreAuthorize bloquea acceso USER a /admin | `acceso-denegado-403.png` |
+
+---
+
+## Instrucciones de Ejecución
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone https://github.com/KeiverJ/castellanos-post2-u9.git
+   cd castellanos-post2-u9
+   ```
+
+2. **Ejecutar la aplicación:**
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+   O en Windows:
+   ```bash
+   mvnw.cmd spring-boot:run
+   ```
+
+3. **Acceder a la aplicación:**
+   - URL: `http://localhost:8080`
+   - Login: `/login`
+   - Registro: `/registro`
+
+4. **Usuarios de prueba:**
+   - **Admin:** `admin@test.com` / `admin123` (Rol: ADMIN)
+   - **Usuario:** `user@test.com` / `user123` (Rol: USER)
+
+5. **Probar seguridad:**
+   - Login como USER e intentar acceder a `/admin` → Debe mostrar 403
+   - Verificar cabecera CSP en inspector (F12 → Network → Response Headers)
+   - Intentar inyectar `<script>` en registro → Debe mostrarse como texto plano
+
+---
+
+## Estructura del Proyecto
+
+```
+src/
+├── main/
+│   ├── java/com/universidad/estudiantes/
+│   │   ├── config/
+│   │   │   └── SecurityConfig.java      # Configuración de seguridad
+│   │   ├── controller/
+│   │   │   ├── AuthController.java
+│   │   │   ├── ErrorController.java     # Manejo 403
+│   │   │   └── ...
+│   │   ├── service/
+│   │   │   └── UsuarioService.java      # @PreAuthorize aplicado
+│   │   └── ...
+│   └── resources/
+│       ├── templates/
+│       │   ├── error/
+│       │   │   └── 403.html             # Página personalizada
+│       │   └── ...
+│       └── application.properties
+└── test/
+    └── ...
 ```
 
-3. Si necesitas un administrador, actualiza el rol de un usuario registrado:
+---
 
-```sql
-UPDATE usuarios
-SET rol = 'ROLE_ADMIN'
-WHERE email = 'admin@universidad.edu';
-```
+## Commits de Seguridad
 
-## Instrucciones de ejecucion
+| Commit | Descripción |
+|--------|-------------|
+| `feat: aplicar @PreAuthorize en UsuarioService` | Anotaciones de seguridad en servicio |
+| `feat: agregar pagina 403 personalizada` | Vista dedicada para acceso denegado |
+| `fix: reforzar CSRF y manejo 403` | Protección CSRF activa y manejo de errores |
+| `feat: configurar cabecera CSP` | Política de seguridad de contenido |
+| `fix: actualizar SecurityConfig y pagina 403 restableciendo configuracion original de CSRF y diseño personalizado` | Ajustes de configuración |
 
-1. Abrir una terminal en la raiz del proyecto.
-2. Ejecutar la aplicacion:
+---
 
-```
-./mvnw spring-boot:run
-```
+## Notas de Seguridad
 
-3. Abrir el navegador en:
-
-```
-http://localhost:8080/login
-```
-
-## Funcionalidades principales y endpoints
-
-- Registro de usuarios y autenticacion por formulario.
-- Dashboard con acceso segun rol.
-- Panel de administracion para listar usuarios.
-- Gestion de estudiantes y cursos.
-
-Endpoints principales:
-
-- `GET /login` y `POST /login`
-- `GET /registro` y `POST /registro`
-- `GET /dashboard`
-- `GET /admin`
-- `POST /logout`
-- `GET /estudiantes`, `POST /estudiantes/guardar`, `POST /estudiantes/eliminar/{id}`
-- `GET /cursos`, `POST /cursos/guardar`, `POST /cursos/{cursoId}/inscribir/{estudianteId}`
-
-## Seguridad aplicada
-
-- `@PreAuthorize` con expresiones distintas en `UsuarioService` para:
-  - Listado exclusivo de administradores.
-  - Lectura por el propio usuario o por ADMIN (incluye `hasAnyRole`).
-  - Cambio de rol solo por ADMIN.
-  - Actualizacion de nombre solo por su propietario o ADMIN.
-- Vista 403 personalizada para accesos no autorizados.
-- Mitigacion XSS con `th:text` en el dashboard.
-- Politica CSP basica enviada por cabecera HTTP.
-- CSRF activo y validado con rechazo de POST sin token.
-
-## Pruebas de seguridad realizadas
-
-- **Acceso denegado con roles:** un usuario con rol `USER` intento acceder a `/admin` y el servidor devolvio **403** con la vista personalizada que muestra el usuario autenticado.
-- **XSS almacenado:** se registro un usuario con nombre `<script>alert("XSS")</script>` y en el dashboard se mostro el texto escapado (`&lt;script&gt;...`) sin ejecutar el script.
-- **CSP:** se verifico que la respuesta HTTP incluye la cabecera `Content-Security-Policy` con las directivas definidas.
-- **CSRF:** se envio un `POST /logout` sin token CSRF y el servidor respondio **403 Forbidden**.
-
-## Evidencia visual
-
-**Acceso denegado con 403 personalizado**
-
-![Acceso denegado 403](capturas/acceso-denegado-403.png)
-
-**Mitigacion XSS en dashboard (contenido escapado)**
-
-![XSS escapado en dashboard](capturas/xss-escapado-dashboard.png)
-
-**Cabecera Content-Security-Policy en respuesta**
-
-![CSP Header](capturas/csp-header.png)
-
-**Proteccion CSRF (POST sin token rechazado)**
-
-![CSRF 403](capturas/csrf-403.png)
-
-## Decisiones de diseno y justificacion tecnica
-
-- Las reglas de acceso se aplican en la capa de servicio para separar la seguridad de la capa web.
-- Se usa `th:text` para escapar contenido del usuario y evitar XSS almacenado.
-- Se aplica CSP basico para limitar fuentes de scripts, estilos e imagenes.
-- La pagina 403 es una vista dedicada que informa el usuario autenticado.
-
-## Solucion de problemas frecuentes
-
-- **Puerto 8080 ocupado:** cierra el proceso o libera el puerto antes de iniciar.
-- **Error de conexion a MySQL:** verifica que `estudiantes_db` exista y que el usuario `appuser` tenga permisos.
-- **No puedes ver el panel admin:** actualiza el rol del usuario a `ROLE_ADMIN` en la base de datos.
+- ✅ @PreAuthorize habilitado con `@EnableMethodSecurity`
+- ✅ CSRF protegido con tokens en cookies (HttpOnly false para JS)
+- ✅ XSS mitigado por escape automático de Thymeleaf
+- ✅ CSP previene carga de recursos externos no autorizados
+- ✅ Página 403 personalizada con información del usuario autenticado
+- ✅ Contraseñas hasheadas con BCrypt (12 rondas)
