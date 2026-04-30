@@ -57,6 +57,7 @@ public class SecurityConfig {
             )
             .csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .ignoringRequestMatchers("/login", "/logout")
             )
             .exceptionHandling(ex -> ex
                 .accessDeniedPage("/error/403")
