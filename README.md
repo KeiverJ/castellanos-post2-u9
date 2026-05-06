@@ -167,7 +167,7 @@ cd castellanos-post2-u9
 **En Windows:**
 
 ```bash
-mvnw.cmd spring-boot:run
+mvn spring-boot:run
 ```
 
 **En Linux/Mac:**
